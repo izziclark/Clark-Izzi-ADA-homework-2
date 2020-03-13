@@ -1,0 +1,195 @@
+---
+title: "Clark-Izzi-ADA-homework-2"
+output: html_document
+---
+Challenge 1:
+```{r messages=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(sciplot)
+library(radiant)
+f <- "https://raw.githubusercontent.com/difiore/ADA-datasets/master/IMDB-movies.csv"
+d <- read_csv(f, col_names = TRUE)
+```
+Filter dataset, add decade column, plot runtimeMinutes histogram for each decade.
+```{r}
+s <- filter(d, startYear >= 1920 & startYear <= 1979 & runtimeMinutes < 240)
+s <- mutate(s, "decade" = paste(substr(startYear,3,3), "0s", sep = ""))
+p <- ggplot(s, aes(x=runtimeMinutes), color = factor(decade)) + geom_histogram() + facet_wrap(~decade, ncol = 3) # wrap data by decade into 3 columns
+p
+```
+Population mean and population standard deviation (using sdpop() from {radiant}) in runtimeMinutes for each decade
+```{r}
+results <- s %>% group_by(decade) %>%
+  summarise(
+    popMean = mean(runtimeMinutes, na.rm = TRUE),
+    popSD = sd(runtimeMinutes, na.rm = TRUE),
+  )
+results
+```
+Single sample of 100 movies from each decade: sample mean and standard deviation, plus estimate of SE around population mean
+```{r}
+results_samp <- tibble(decade = character(), sampMean = numeric(), sampSD = numeric(), estSE = numeric())
+for (d in unique(s$decade)){
+  samp <- sample_n(filter(s, decade == d), size = 100, replace = FALSE)
+  x <- mean(samp$runtimeMinutes, na.rm = TRUE)
+  y <- sd(samp$runtimeMinutes, na.rm = TRUE)
+  z <- y / sqrt(100) # estimate pop SE from SD of sample
+  results_samp <- add_row(results_samp, decade = d, sampMean = x, sampSD = y, estSE = z)
+}
+results_samp
+```
+Compare estimates to actual population mean and calculated SE based on population standard deviation. (I added to the population results table from earlier.) Slightly different but comparable to sample stats!
+```{r}
+results <- mutate(results, "calcSE" = popSD/sqrt(100)) # expected SE for sample size of 100
+results
+```
+Sampling distribution of mean runtimeMinutesfor each decade. Had trouble actually getting them to print from inside the loop - maybe my computer is too slow?
+```{r}
+for (d in unique(s$decade)){
+  x <- filter(s, decade == d)
+  samp_dist_mean <- do(10000) * mean(~runtimeMinutes, data = sample_n(x, size = 100, replace = FALSE))
+  mean_plot <- histogram(~mean, data = samp_dist_mean, xlab = paste("Sampling Distribution for the\nMean of runtimeMinutes: ", d))
+  samp_dist_sd <- do(10000) * sd(~runtimeMinutes, data = sample_n(x, size = 100, replace = FALSE))
+  sd_plot <- histogram(~sd, data = samp_dist_sd, xlab = paste("Sampling Distribution for the\nStandard deviation of runTimeMinutes: ", d))
+  plot_grid(mean_plot, sd_plot)
+}
+```
+
+Challenge 2:
+l = 18
+X = poission random variable of num of calls heard each session
+What is the probability that she will hear 13 or fewer calls during any given session? 0.1425978
+```{r}
+ppois(q = 13, lambda = l)
+```
+What is the probability that she will hear no calls in a session? 1.522998e-08
+```{r}
+dpois(x = 0, lambda = l)
+```
+What is the probability that she will hear exactly 7 calls in a session? 0.00185002
+```{r}
+dpois(x = 7, lambda = l)
+```
+What is the probability that she will hear more than 20 calls in a session? (1-ppois?) 0.2692798
+```{r}
+1-ppois(q = 20, lambda = l)
+```
+Plot the relevant Poisson mass function over the values in range 0 ≤ x ≤ 40.
+```{r}
+p <- plotDist(
+  "pois",
+  lambda = l,
+  xlim = c(0, 40),
+  main = paste0("Poisson Distribution\nwith lambda=", l), xlab = "x",
+  ylab = "Pr(X=x)"
+)
+p
+```
+Using the rpois() function, simulate 520 results from this distribution (i.e., 10 full years of Saturday monitoring sessions).
+```{r}
+pois_dist <- rpois(n = 520, lambda = l)
+```
+Plot the simulated results. How do your simulated results compare to the shape of the probability mass function you plotted above? 520 may not be a large enough sample (running a few times generated variable results), but overall similar to the probability mass function with a peak density around 18.
+```{r}
+histogram(pois_dist,
+  xlim = c(0,40)
+)
+xlim()
+roll <- function(nrolls = 1) { sample(1:6, nrolls, replace = TRUE)
+} # function with default of 1 roll nrolls <- 1000
+two_dice <- roll(nrolls) + roll(nrolls)
+library(mosaic)
+histogram(two_dice,
+  breaks = c(1.5:12.5),
+  type = "density",
+  main = "Rolling Two Dice",
+  xlab = "Sum of Rolls",
+  ylab = "Probability"
+)
+```
+
+Challenge 3:
+```{r}
+f2 <- "https://raw.githubusercontent.com/difiore/ADA-datasets/master/zombies.csv"
+d <- read_csv(f2, col_names = TRUE)
+```
+Population mean and standard deviation for each variable:
+```{r}
+height_m <- mean(d$height)
+height_sd <- sdpop(d$height)
+weight_m <- mean(d$weight)
+weight_sd <- sdpop(d$weight)
+age_m <- mean(d$age)
+age_sd <- sdpop(d$age)
+zombies_m <- mean(d$zombies_killed)
+zombies_sd <- sdpop(d$zombies_killed)
+education_m <- mean(d$years_of_education)
+education_sd <- mean(d$years_of_education)
+```
+Scatterplots of height and weight in relation to age. Both increase as age increases, with an especially clear positive relationship between height and age.
+```{r}
+p <- ggplot(data = d, aes(
+  x = age,
+  y = height,
+))
+p <- p + geom_point(na.rm = TRUE)
+p
+p2 <- ggplot(data = d, aes(
+  x = age,
+  y = weight,
+))
+p2 <- p2 + geom_point(na.rm = TRUE)
+p2
+```
+Histograms and Q-Q plots for each quantitative variable:
+Height, weight, and age are normally distributed.
+Distributions of zombies killed and years of education are slightly skewed (more people kill fewer zombies and have fewer years of education).
+```{r}
+histogram(d$height, center = height_m, main = "Height")
+qqnorm(d$height, main = "Height")
+qqline(d$height, col = "gray")
+
+histogram(d$weight, center = weight_m, main = "Weight")
+qqnorm(d$weight, main = "Weight")
+qqline(d$weight, col = "gray")
+
+histogram(d$age, center = age_m, main = "Age")
+qqnorm(d$age, main = "Age")
+qqline(d$age, col = "gray")
+
+histogram(d$zombies_killed, center = zombies_m, main = "Zombies Killed")
+qqnorm(d$zombies_killed, main = "Zombies Killed")
+qqline(d$zombies_killed, col = "gray")
+
+histogram(d$years_of_education, center = education_m, main = "Years of Education")
+qqnorm(d$years_of_education, main = "Years of Education")
+qqline(d$years_of_education, col = "gray")
+```
+Sample 1 subset of 30 survivors.
+```{r}
+s <- sample_n(d, size = 30, replace = FALSE)
+s <- select(s, height, weight, age, zombies_killed, years_of_education)
+samp30 <- tibble(variable = character(), mean = numeric(), sd = numeric(), se = numeric(), ci_lower = numeric(), ci_upper = numeric())
+for (i in seq_along(s)) {
+  m <- mean(s[[i]])
+  sd <- sd(s[[i]])
+  se <- sd / sqrt(30)
+  ci_L <- m - qnorm(1 - 0.05 / 2) * se
+  ci_U <- m + qnorm(1 - 0.05 / 2) * se
+  samp30 <- add_row(samp30, variable = (colnames(s)[i]), mean = m, sd = sd, se = se, ci_lower = ci_L, ci_upper = ci_U)
+}
+samp30
+```
+Sample another 99 samples of 30 survivors.
+```{r}
+set.seed(1)
+height_dist <- do(99) * mean(~height, data = sample_n(d, size = 30, replace = FALSE))
+weight_dist <- do(99) * mean(~weight, data = sample_n(d, size = 30, replace = FALSE))
+age_dist <- do(99) * mean(~age, data = sample_n(d, size = 30, replace = FALSE))
+zombies_dist <- do(99) * mean(~zombies_killed, data = sample_n(d, size = 30, replace = FALSE))
+education_dist <- do(99) * mean(~years_of_education, data = sample_n(d, size = 30, replace = FALSE))
+
+```
+
+
