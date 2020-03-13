@@ -5,6 +5,7 @@ output: html_document
 Challenge 1:
 ```{r messages=FALSE}
 library(tidyverse)
+library(dplyr)
 library(ggplot2)
 library(sciplot)
 library(radiant)
@@ -44,15 +45,15 @@ Compare estimates to actual population mean and calculated SE based on populatio
 results <- mutate(results, "calcSE" = popSD/sqrt(100)) # expected SE for sample size of 100
 results
 ```
-Sampling distribution of mean runtimeMinutesfor each decade. Had trouble actually getting them to print from inside the loop - maybe my computer is too slow?
+Sampling distribution of mean runtimeMinutesfor each decade. Had trouble actually getting them to print from inside the loop - maybe my computer is too slow? Commented it out for now.
 ```{r}
 for (d in unique(s$decade)){
   x <- filter(s, decade == d)
   samp_dist_mean <- do(10000) * mean(~runtimeMinutes, data = sample_n(x, size = 100, replace = FALSE))
-  mean_plot <- histogram(~mean, data = samp_dist_mean, xlab = paste("Sampling Distribution for the\nMean of runtimeMinutes: ", d))
+  #mean_plot <- histogram(~mean, data = samp_dist_mean, xlab = paste("Sampling Distribution for the\nMean of runtimeMinutes: ", d))
   samp_dist_sd <- do(10000) * sd(~runtimeMinutes, data = sample_n(x, size = 100, replace = FALSE))
-  sd_plot <- histogram(~sd, data = samp_dist_sd, xlab = paste("Sampling Distribution for the\nStandard deviation of runTimeMinutes: ", d))
-  plot_grid(mean_plot, sd_plot)
+  #sd_plot <- histogram(~sd, data = samp_dist_sd, xlab = paste("Sampling Distribution for the\nStandard deviation of runTimeMinutes: ", d))
+  #plot_grid(mean_plot, sd_plot)
 }
 ```
 
@@ -181,7 +182,7 @@ for (i in seq_along(s)) {
 }
 samp30
 ```
-Sample another 99 samples of 30 survivors.
+Sample another 99 samples of 30 survivors. Means and standard errors of samping distrubtions are similar to corresponding values generated above! Weight, height, and age look sort of normally distributed, while zombies killed and years of education still look slightly non-normal.
 ```{r}
 set.seed(1)
 height_dist <- do(99) * mean(~height, data = sample_n(d, size = 30, replace = FALSE))
@@ -189,6 +190,21 @@ weight_dist <- do(99) * mean(~weight, data = sample_n(d, size = 30, replace = FA
 age_dist <- do(99) * mean(~age, data = sample_n(d, size = 30, replace = FALSE))
 zombies_dist <- do(99) * mean(~zombies_killed, data = sample_n(d, size = 30, replace = FALSE))
 education_dist <- do(99) * mean(~years_of_education, data = sample_n(d, size = 30, replace = FALSE))
+mean(~mean, data = height_dist)
+sd(~mean, data = height_dist)
+histogram(~mean, data = height_dist, main = "Height")
+mean(~mean, data = weight_dist)
+sd(~mean, data = weight_dist)
+histogram(~mean, data = weight_dist, main = "Weight")
+mean(~mean, data = age_dist)
+sd(~mean, data = age_dist)
+histogram(~mean, data = age_dist, main = "Age")
+mean(~mean, data = zombies_dist)
+sd(~mean, data = zombies_dist)
+histogram(~mean, data = zombies_dist, main = "Zombies Killed")
+mean(~mean, data = education_dist)
+sd(~mean, data = education_dist)
+histogram(~mean, data = education_dist, main = "Years of Education")
 
 ```
 
