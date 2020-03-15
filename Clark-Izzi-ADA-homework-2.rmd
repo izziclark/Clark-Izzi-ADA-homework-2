@@ -3,17 +3,18 @@ title: "Clark-Izzi-ADA-homework-2"
 output: html_document
 ---
 Challenge 1:
-```{r messages=FALSE}
+```{r message=FALSE, include=FALSE, messages=FALSE}
 library(tidyverse)
 library(dplyr)
 library(ggplot2)
 library(sciplot)
 library(radiant)
-f <- "https://raw.githubusercontent.com/difiore/ADA-datasets/master/IMDB-movies.csv"
-d <- read_csv(f, col_names = TRUE)
+library(mosaic)
 ```
 Filter dataset, add decade column, plot runtimeMinutes histogram for each decade.
 ```{r}
+f <- "https://raw.githubusercontent.com/difiore/ADA-datasets/master/IMDB-movies.csv"
+d <- read_csv(f, col_names = TRUE)
 s <- filter(d, startYear >= 1920 & startYear <= 1979 & runtimeMinutes < 240)
 s <- mutate(s, "decade" = paste(substr(startYear,3,3), "0s", sep = ""))
 p <- ggplot(s, aes(x=runtimeMinutes), color = factor(decade)) + geom_histogram() + facet_wrap(~decade, ncol = 3) # wrap data by decade into 3 columns
@@ -46,7 +47,7 @@ results <- mutate(results, "calcSE" = popSD/sqrt(100)) # expected SE for sample 
 results
 ```
 Sampling distribution of mean runtimeMinutesfor each decade. Had trouble actually getting them to print from inside the loop - maybe my computer is too slow? Commented it out for now.
-```{r}
+```{r eval=FALSE, include=FALSE}
 for (d in unique(s$decade)){
   x <- filter(s, decade == d)
   samp_dist_mean <- do(10000) * mean(~runtimeMinutes, data = sample_n(x, size = 100, replace = FALSE))
@@ -58,10 +59,10 @@ for (d in unique(s$decade)){
 ```
 
 Challenge 2:
-l = 18
-X = poission random variable of num of calls heard each session
+
 What is the probability that she will hear 13 or fewer calls during any given session? 0.1425978
 ```{r}
+l = 18
 ppois(q = 13, lambda = l)
 ```
 What is the probability that she will hear no calls in a session? 1.522998e-08
@@ -96,20 +97,7 @@ Plot the simulated results. How do your simulated results compare to the shape o
 histogram(pois_dist,
   xlim = c(0,40)
 )
-xlim()
-roll <- function(nrolls = 1) { sample(1:6, nrolls, replace = TRUE)
-} # function with default of 1 roll nrolls <- 1000
-two_dice <- roll(nrolls) + roll(nrolls)
-library(mosaic)
-histogram(two_dice,
-  breaks = c(1.5:12.5),
-  type = "density",
-  main = "Rolling Two Dice",
-  xlab = "Sum of Rolls",
-  ylab = "Probability"
-)
 ```
-
 Challenge 3:
 ```{r}
 f2 <- "https://raw.githubusercontent.com/difiore/ADA-datasets/master/zombies.csv"
